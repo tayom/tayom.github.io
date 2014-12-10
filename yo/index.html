@@ -1,0 +1,476 @@
+<!doctype html>  
+<html lang="en">
+    
+    <head>
+        <meta charset="utf-8">
+        
+        <title>Not your average Drag and Drop</title>
+
+        <meta name="description" content="A look at the HTML5 Drag and Drop API and how it was used on fontdragr.com">
+        <meta name="author" content="Ryan Seddon">
+        
+        <link href='http://fonts.googleapis.com/css?family=Yanone+Kaffeesatz' rel='stylesheet' type='text/css'>
+        
+        <link rel="stylesheet" href="../reveal.js/css/reset.css">
+        <link rel="stylesheet" href="../reveal.js/css/main.css">
+
+        <link rel="stylesheet" href="../reveal.js/lib/zenburn.css">
+
+        <style type="text/css">
+            [draggable='true'] {
+              -khtml-user-drag: element;
+              -webkit-user-drag: element;
+              -khtml-user-select: none;
+              -moz-user-select: none;
+              -webkit-user-select: none;
+              user-select: none;
+              display: block;
+            }
+            .slide1 #reveal ul { 
+                position: absolute;
+                top: 0;
+                right: 140px;
+            }
+            .center {
+                position: relative;
+                top: 200px;
+            }
+            .gah {
+                font-family: "Comic Sans MS";
+                line-height: 1.2;
+                color: deeppink;
+            }
+            .fix {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+            }
+            
+            .drop, .drag {
+                width: 400px;
+                height: 200px;
+                border: 5px dotted #000;
+                border-radius: 10px;
+                margin: 0 auto;
+                position: relative;
+            }
+                .drop:after, .drag:after {
+                    content: "Drop a file";
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    text-align: center;
+                    width: 100%;
+                    line-height: 200px;
+                }
+                
+            .drag, .drop2 {
+                display: inline-block;
+                width: 300px;
+                height: 200px;
+            }            
+            .drag:after, .drop2:after {
+                line-height: 200px;
+            }
+            #dataurl        { height: 250px; }
+            #dataurl:after  { line-height: 250px; }
+
+            .drop2:after {
+                content: "Drop some data";
+            }
+            .drop3:after {
+                content: "Drop an image";
+            }
+            .drag:after {
+                content: "Drag me";
+            }
+            
+            .slide1 #reveal ul li { 
+                -webkit-transform-origin: 0% 50%;
+                   -moz-transform-origin: 0% 50%;
+                    -ms-transform-origin: 0% 50%;
+                        transform-origin: 0% 50%;
+
+                
+            }
+            .slide1 #reveal ul li:first-child { 
+                -webkit-transform: rotate(-30deg);
+                   -moz-transform: rotate(-30deg);
+                    -ms-transform: rotate(-30deg);
+                        transform: rotate(-30deg);
+            }
+            .slide1 #reveal ul li:last-child { 
+                -webkit-transform: rotate(30deg);
+                   -moz-transform: rotate(30deg);
+                    -ms-transform: rotate(30deg);
+                        transform: rotate(30deg);
+            }
+            .slide2 {
+                background-color: #BB5316;
+            }
+            iframe {
+                border: 0;
+                margin: 0;
+                padding: 0;
+                width: 340px;
+                height: 140px;
+            }
+            iframe.fix { bottom: -70px; left: 50%; margin: 0 0 0 -170px; }
+        </style>
+    
+        <script src="modernizr.custom.44418.js"></script>
+    </head>
+    
+    <body>
+        
+        <div id="reveal">
+            
+            <!-- Any section element inside of this container is displayed as a slide -->
+            <div class="slides">
+                <section>
+                    <h1>Not your average Drag and Drop</h1>
+                    <h2 class="fix">Ryan Seddon</h2>
+                    <script>
+                        // Delicously hacky. Look away.
+                        if( navigator.userAgent.match( /(iPhone|iPad|iPod|Android)/i ) )
+                        document.write( '<p style="color: rgba(0,0,0,0.3); text-shadow: none;">('+'Tap to navigate'+')</p>' );
+                    </script>
+                </section>
+
+                <section>
+                    <div class="center">
+                        <h1>Me</h1>
+                        <ul>
+                            <li><a href="http://twitter.com/ryanseddon">@ryanseddon</a></li>
+                            <li><a href="http://thecssninja.com">thecssninja.com</a></li>
+                            <li><a href="http://git.io/ryan">git.io/ryan</a></li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section>
+                    <h1>font dragr</h1>
+                    <a class="image" href="http://fontdragr.com/" target="_blank">
+                        <img src="fd.jpg" height="300">
+                    </a>
+                </section>
+
+                <section>
+                    <h1>DnD is an IE API</h1>
+                    <h2>Shipped in IE5.5</h2>
+                    <a class="image" href="http://fontdragr.com/" target="_blank">
+                        <img src="../assets/browser-war-copy.png">
+                    </a>
+                    <iframe class="fix" src="http://sandbox.thewikies.com/caniuse/draganddrop.html"></iframe>
+                </section>
+
+                <section>
+                    <h1>That's why it's <span class="gah">UGLY</span></h1>
+                    <h2>To accept a drop you need to cancel two other events, lolwut?</h2>
+                </section>
+
+                <section>
+                    <pre style="font-size: 25px;"><code contenteditable>
+var body = document.body;
+
+body.addEventListener("dragover", function(e) { 
+    e.preventDefault(); 
+}, false);
+
+body.addEventListener("dragenter", function(e) { 
+    e.preventDefault(); 
+}, false);
+
+body.addEventListener("drop", function(e) { 
+    // Now we can get to Drop
+}, false);
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h1>FileReader</h1>
+                    <h2>Allows you to read files into memory</h2>
+                    <div id="filename" class="drop"></div>
+                    <iframe src="http://sandbox.thewikies.com/caniuse/filereader.html" class="fix"></iframe>
+                </section>
+
+                <section>
+                    <h1>Mozilla did it first</h1>
+                    <h2>DnD API has files property</h2>
+                    <div id="dataurl" class="drop drop3"></div>
+                </section>
+
+                <section>
+                    <pre style="font-size: 25px;"><code contenteditable>
+body.addEventListener("drop", function(e) { 
+    var files = e.dataTransfer.files,
+        // This is used to load files into memory
+        reader = new FileReader();
+
+    // FileReader is async so we attach a listener
+    reader.addEventListener("loadend", function(e) {
+        // e.target.result contains the base64 string
+    }, false);
+
+    // Get file and turn it into a base64 string
+    reader.readAsDataURL(files[0]);
+	
+    e.preventDefault();
+}, false);
+                    </code></pre>
+                </section>
+                
+                <section>
+                    <h1>Blob URLs</h1>
+                    <h2>Reference the file directly</h2>
+                    <div id="bloburl" class="drop"></div>
+                    <iframe src="http://sandbox.thewikies.com/caniuse/bloburls.html" class="fix"></iframe>
+                </section>
+
+                <section>
+                    <pre style="font-size: 25px;"><code contenteditable>
+body.addEventListener("drop", function(e) { 
+    var files = e.dataTransfer.files,
+        url = window.URL || window.webkitURL;
+
+    alert(url.createObjectURL(files[0]));
+	
+    e.preventDefault();
+}, false);
+                    </code></pre>
+                </section>
+                
+                <section>
+                    <h1>FileReader</h1>
+                    <div>
+                        <ul>
+                            <li>Firefox 3.6+</li>
+                            <li>Chrome 6+</li>
+                            <li>Opera 11+*</li>
+                            <li>IE10+</li>
+                        </ul>
+                    </div>
+                    <a class="image" href="http://www.caniuse.com/#search=FileReader" target="_blank">
+                        <img src="filereader.png">
+                    </a>
+                </section>
+                
+                <section>
+                    <h1>Blob URLs</h1>
+                    <div>
+                        <ul>
+                            <li>Firefox 4+</li>
+                            <li>Chrome 8+</li>
+                            <li>IE10+</li>
+                        </ul>
+                    </div>
+                    <a class="image" href="http://www.caniuse.com/#search=createObjectURL" target="_blank">
+                        <img src="bloburl.png">
+                    </a>
+                </section>
+                
+                <section>
+                    <h1>Dragging</h1>
+                    <h2>You can attach data to a drag event</h2>
+                    <div class="drag" id="drag" draggable="true"></div>
+                    <div class="drop drop2" id="drop"></div>
+                    <iframe class="fix" src="http://sandbox.thewikies.com/caniuse/draganddrop.html"></iframe>
+                </section>
+
+                <section>
+                    <h1>Two things</h1>
+                    <pre style="font-size: 25px;"><code contenteditable>
+&lt;div class="drag" id="drag" draggable="true"&gt;&lt;/div&gt;
+                    </code></pre>
+                    <pre style="font-size: 25px;"><code contenteditable>
+[draggable='true'] {
+  -khtml-user-drag: element;
+  -webkit-user-drag: element;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h1>Set/get drag data</h1>
+                    <pre style="font-size: 25px;"><code contenteditable>
+drag.addEventListener("dragstart", function(e) {
+    var dt = e.dataTransfer,
+    // IE doesn't like anything other than "Text"
+    type = /*@cc_on!@*/0 ? "Text" : "text/plain";
+    dt.setData( type, "Some data to set" );
+}, false);
+
+drop.addEventListener("drop", function(e) { 
+    var dt = e.dataTransfer,
+    // IE doesn't like anything other than "Text"
+    data = dt.getData( /*@cc_on!@*/0 ? 
+    "Text" : "text/plain" );
+    alert(data);
+}, false);
+                    </code></pre>
+                </section>
+
+                <section draggable="true" id="dragout" data-downloadurl="application/octet-stream:Eadui.ttf:http://www.thecssninja.com/demo/gmail_dragout/Eadui.ttf">
+                    <h1>Bonus feature</h1>
+                    <h2>Drag a file out of the browser*</h2>
+                    <pre style="font-size: 25px;"><code contenteditable>
+dragout.addEventListener("dragstart", function(e) {
+  var dt = e.dataTransfer;
+    
+  data = dt.setData( "DownloadURL", "application/octet-stream:Eadui.ttf:http://example.com/Eadui.ttf" );
+}, false);
+                    </code></pre>
+                    <p>* Proprietary, Chrome only see <a href="http://www.thecssninja.com/javascript/gmail-dragout" target="_blank">my article</a> about it</p>
+                </section>
+
+                <section>
+                    <h1>Thanks!</h1>
+                    <ul>
+                        <li><a href="http://cssn.in/ja/dnd">Slides: http://cssn.in/ja/dnd</a></li>
+                    </ul>
+                </section>
+                
+            </div>
+
+            <!-- The navigational controls UI -->
+            <aside class="controls">
+                <a class="left" href="#">&#x25C4;</a>
+                <a class="right" href="#">&#x25BA;</a>
+                <a class="up" href="#">&#x25B2;</a>
+                <a class="down" href="#">&#x25BC;</a>
+            </aside>
+
+            <!-- Displays presentation progress, max value changes via JS to reflect # of slides -->
+            <div class="progress"><span></span></div>
+            
+        </div>
+        
+        <script src="../reveal.js/js/reveal.js"></script>
+        <script src="../reveal.js/lib/highlight.js"></script>
+        <script>
+            // Parse the query string into a key/value object
+            var query = {};
+            location.search.replace( /[A-Z0-9]+?=(\w*)/gi, function(a) {
+                query[ a.split( '=' ).shift() ] = a.split( '=' ).pop();
+            } );
+
+            Reveal.initialize({
+                // Display controls in the bottom right corner
+                controls: true,
+
+                // Display a presentation progress bar
+                progress: true,
+
+                // If true; each slide will be pushed to the browser history
+                history: true,
+
+                // Flags if mouse wheel navigation should be enabled
+                mouseWheel: true,
+
+                // Apply a 3D roll to links on hover
+                rollingLinks: true,
+
+                // UI style
+                theme: query.theme || 'inverted', // default/neon
+
+                // Transition style
+                transition: query.transition || 'concave' // default/cube/page/concave/linear(2d)
+            });
+
+            hljs.initHighlightingOnLoad();
+            
+            /* Drop it like its hot */
+            var body = document.body,
+                dataurl = document.getElementById("dataurl");
+
+            body.addEventListener("dragover", function(e) { e.preventDefault(); }, false);
+            body.addEventListener("dragenter", function(e) { e.preventDefault(); }, false);
+            body.addEventListener("drop", function(e) { 
+                var files = e.dataTransfer.files,
+                    // This is used to load files into memory
+                    reader = new FileReader();
+                
+                if(e.target.id === "filename") {
+                    alert("File name: " + files[0].name);
+                } else if(e.target.id === "dataurl") {
+                    // FileReader is async so we attach a listener
+                    reader.onloadend = function(e) {
+                        var img = document.createElement("img");
+
+                        img.width = "350";
+                        img.src = e.target.result;
+
+                        dataurl.appendChild(img);
+                    };
+
+                    // Get file and turn it into a base64 string
+                    reader.readAsDataURL(files[0]);
+                }
+
+                e.preventDefault();
+            }, false);
+            
+            /* Blobs */
+            var bloburl = document.getElementById("bloburl");
+
+            bloburl.addEventListener("dragover", function(e) { e.preventDefault(); }, false);
+            bloburl.addEventListener("dragenter", function(e) { e.preventDefault(); }, false);
+            bloburl.addEventListener("drop", function(e) { 
+                var files = e.dataTransfer.files,
+                    url = window.URL || window.webkitURL;
+                
+                if(url && url.createObjectURL) {
+                    alert(url.createObjectURL(files[0]));
+                } else {
+                    alert("You're using an older browser that doesn't support object URLs");
+                }
+                
+                e.preventDefault();
+                e.stopPropagation(); 
+            }, false);
+
+            /* Dragging */
+            var drag = document.getElementById("drag"),
+                drop = document.getElementById("drop");
+
+            drop.addEventListener("dragover", function(e) { e.preventDefault(); }, false);
+            drop.addEventListener("dragenter", function(e) { e.preventDefault(); }, false);
+            drop.addEventListener("drop", function(e) { 
+                var dt = e.dataTransfer,
+                    // IE doesn't like anything other than "Text"
+                    data = dt.getData( /*@cc_on!@*/0 ? "Text" : "text/plain" );
+                
+                alert(data);
+
+                e.preventDefault();
+            }, false);
+
+            drag.addEventListener("dragstart", function(e) {
+                var dt = e.dataTransfer,
+                    // IE doesn't like anything other than "Text"
+                    data = dt.setData( /*@cc_on!@*/0 ? "Text" : "text/plain", "Melbourne Geek, W00t! \\o/" );
+            }, false);
+
+            /* Dragging */
+            var dragout = document.getElementById("dragout");
+
+            dragout.addEventListener("dragstart", function(e) {
+                var dt = e.dataTransfer,
+                    file = e.target.getAttribute("data-downloadurl");
+                    
+                    data = dt.setData( "DownloadURL", file );
+            }, false);
+        </script>
+
+        <script>var _gaq=[['_setAccount','UA-4638292-1'],['_trackPageview']];
+(function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];g.async=1;
+g.src=('https:'==location.protocol?'//ssl':'//www')+'.google-analytics.com/ga.js';
+s.parentNode.insertBefore(g,s)}(document,'script'));
+</script>
+
+    </body>
+</html>
